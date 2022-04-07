@@ -1,0 +1,23 @@
+{
+  "name": "whitelisthelper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@sinclair/typebox": "^0.23.4",
+    "ajv": "^8.11.0",
+    "atob": "^2.1.2",
+    "axios": "^0.25.0",
+    "body-parser": "^1.19.1",
+    "express": "^4.17.2",
+    "socket.io": "^4.4.1",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.3.0",
+    "websocket": "^1.0.34",
+    "wsapix": "^0.5.0"
+  }
+}
