@@ -1,5 +1,18 @@
 const axios = require('axios');
 
+const handleJson = (item) => {
+    return {
+        amount: item.amount,
+        buyAvgPrice: 0,
+        cryptoHoldings: 0,
+        cryptocurrencyId: item.cryptocurrencyId,
+        priceChangePercentage24h: 0,
+        name: item.name,
+        symbol: item.symbol,
+        historyList: [item]
+    }
+}
+
 const getPortfolio = async (id) => {
     let res = fs.readFileSync('portfolios.json');
     let allData = JSON.parse(res);
@@ -36,13 +49,17 @@ const getPortfolio = async (id) => {
     }
 }
 
-const addToPortfolio = (id, data) => {
+const addToPortfolio = async (id, data) => {
     const nData = data;
     let res = fs.readFileSync('portfolios.json');
     let allData = JSON.parse(res);
     const currentPortfolio = allData.find((item) => +item.id === +id);
-    const currentToken = currentPortfolio?.tokenList?.find((item) => +item.cryptocurrencyId === +nData.cryptocurrencyId)
-    currentToken.historyList = [...currentToken.historyList, nData]
+    const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
+    if (currentToken) {
+        currentToken.historyList = [...currentToken.historyList, nData]
+    } else {
+        currentPortfolio?.tokenList.push(handleJson(nData))
+    }
     fs.writeFileSync('portfolios.json', JSON.stringify(allData));
     return true;
 }
@@ -80,8 +97,10 @@ app.post('/add-to-portfolio', async (req, res) => {
         if (!req.body.amount) throw Error('Не передано amount')
         if (!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
         if (!req.body.price) throw Error('Не передано price')
+        if (!req.body.name) throw Error('Не передано name')
+        if (!req.body.symbol) throw Error('Не передано symbol')
         if (req.query?.id) {
-            const p = addToPortfolio(req.query?.id, req.body)
+            const p = await addToPortfolio(req.query?.id, req.body)
             if (p) {
                 res.send({ success: true })
             }
@@ -104,8 +123,6 @@ wsServer.on('request', function(request) {
     connection.on('message', async function(message) {
         const response = JSON.parse(message.utf8Data)
         if (response.method === 'getPortfolio' && response.id) {
-            const p = await getPortfolio(+response.id);
-            connection.sendUTF(JSON.stringify(p));
             setInterval(async () => {
                 const p = await getPortfolio(1);
                 connection.sendUTF(JSON.stringify(p));
