@@ -25,11 +25,12 @@ const getAllTokens = async () => {
 }
 
 
-const searchTokens = (value) => {
+const searchTokens = (v) => {
     try {
+        const value = v.toLowerCase()
         let tokens = fs.readFileSync('allTokens.json');
         let allTokens = JSON.parse(tokens);
-        const result = allTokens.filter((t) => t.name.includes(value) || t.cryptocurrencyId.includes(value))
+        const result = allTokens.filter((t) => t.name.toLowerCase().includes(value) || t.cryptocurrencyId.toLowerCase().includes(value))
         return result?.slice(0, 10);
     } catch (e) {
         console.log(e)
@@ -255,18 +256,18 @@ wsServer.on('request', function(request) {
         if (response.method === 'getPortfolio' && response.id) {
             setInterval(async () => {
                 const p = await getPortfolio(1);
-                connection.sendUTF(JSON.stringify(p));
+                connection.sendUTF(JSON.stringify({action: 'portfolio', data: p}));
             }, 30000)
         }
         if (response.method === 'getChartValues' && response.id) {
             setInterval(async () => {
                 const p = await getChartValues(response.id);
-                connection.sendUTF(JSON.stringify(p));
+                connection.sendUTF(JSON.stringify({action: 'chart', data: p}));
             }, 300000)
         }
         if (response.method === 'SearchToken' && response.value) {
             const p = searchTokens(response.value);
-            connection.sendUTF(JSON.stringify(p));
+            connection.sendUTF(JSON.stringify({action: 'search', data: p}));
         }
     });
     connection.on('close', function(reasonCode, description) {
