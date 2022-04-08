@@ -1,4 +1,5 @@
 const axios = require('axios');
+const fs = require('fs');
 
 const handleJson = (item) => {
     return {
@@ -10,6 +11,71 @@ const handleJson = (item) => {
         name: item.name,
         symbol: item.symbol,
         historyList: [item]
+    }
+}
+
+// let res1 = fs.readFileSync('sdfsdf.json');
+// let allData1 = JSON.parse(res1);
+// allData1 = allData1.map((o) => {
+//     o.timestamp = new Date(o.timestamp).getTime();
+//     return [o.timestamp, o.value];
+// })
+// console.log(allData1)
+// fs.writeFileSync('sdfsdf123.json', JSON.stringify(allData1));
+
+const updatePortfolioHistory = (frame, count) => {
+    let res = fs.readFileSync('portfolios.json');
+    let resCharts = fs.readFileSync('historyChart.json');
+    let allData = JSON.parse(res);
+    let chartData = JSON.parse(resCharts);
+    const now = Date.now();
+    allData.forEach((item) => {
+        const totalPriceAllTokens = item.tokenList.reduce((acc, next) => { return +acc + next.cryptoHoldings }, 0)
+        const chart = chartData.find(el => +el.id === +item.id);
+        chart[`historyChart${frame}`] = chart[`historyChart${frame}`]?.slice(1, count)
+        chart[`historyChart${frame}`].push([now, totalPriceAllTokens])
+        })
+    fs.writeFileSync('historyChart.json', JSON.stringify(chartData));
+}
+
+const updateCurrentPortfolioHistory = (frame, count, id) => {
+    let res = fs.readFileSync('portfolios.json');
+    let resCharts = fs.readFileSync('historyChart.json');
+    let allData = JSON.parse(res);
+    let chartData = JSON.parse(resCharts);
+    const currentPortfolio = allData.find((item) => +item.id === +id);
+    const currentChart = chartData.find((item) => +item.id === +id);
+    const now = Date.now();
+    const totalPriceAllTokens = currentPortfolio.tokenList.reduce((acc, next) => { return +acc + next.cryptoHoldings }, 0)
+    currentChart[`historyChart${frame}`].push([now, totalPriceAllTokens])
+    fs.writeFileSync('historyChart.json', JSON.stringify(chartData));
+}
+
+setInterval(() => {
+    updatePortfolioHistory('24h', 288)
+}, 300000)
+
+setInterval(() => {
+    updatePortfolioHistory('7d', 168)
+}, 3600000)
+
+setInterval(() => {
+    updatePortfolioHistory('1m', 30)
+    updatePortfolioHistory('3m', 90)
+}, 86400000)
+
+setInterval(() => {
+    updatePortfolioHistory('1y', 122)
+}, 259200000)
+
+const getChartValues = (id) => {
+    let res = fs.readFileSync('historyChart.json');
+    let allData = JSON.parse(res);
+    const currentChart = allData.find((item) => +item.id === +id);
+    if (currentChart) {
+        return currentChart;
+    } else {
+        return null;
     }
 }
 
@@ -32,17 +98,17 @@ const getPortfolio = async (id) => {
                 item.image = actualImage;
                 item.currentPrice = actualPrice;
                 item.priceChangePercentage24h = price_change_percentage_24h;
-                const totalAmount = item.historyList.reduce((acc, next) => {return +acc + +next.amount}, 0)
+                const totalAmount = item.historyList.reduce((acc, next) => { return +acc + +next.amount }, 0)
                 item.amount = totalAmount;
                 const buyAvgPrice = item.historyList.reduce((acc, next) => {return +acc + +next.price}, 0) / item.historyList?.length;
                 item.buyAvgPrice = buyAvgPrice;
                 item.cryptoHoldings = item.amount * item.currentPrice;
             })
             fs.writeFileSync('portfolios.json', JSON.stringify(allData));
-            return allData
+            return currentPortfolio
         } catch (e) {
             console.log(e.message)
-            return allData
+            return currentPortfolio
         }
     } else {
         return null;
@@ -57,6 +123,11 @@ const addToPortfolio = async (id, data) => {
     const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
     if (currentToken) {
         currentToken.historyList = [...currentToken.historyList, nData]
+        // updateCurrentPortfolioHistory('24h', 288, id)
+        // updateCurrentPortfolioHistory('7d', 168, id)
+        // updateCurrentPortfolioHistory('1m', 30, id)
+        // updateCurrentPortfolioHistory('3m', 90, id)
+        // updateCurrentPortfolioHistory('1y', 122, id)
     } else {
         currentPortfolio?.tokenList.push(handleJson(nData))
     }
@@ -73,7 +144,6 @@ const WebSocketServer = require('websocket').server;
 const wsServer = new WebSocketServer({
     httpServer: server,
 });
-const fs = require('fs');
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.json({ extended: true }));
@@ -82,8 +152,31 @@ app.get('/get-portfolio', async (req, res) => {
     try {
         if (req.query?.id) {
             const p = await getPortfolio(req.query?.id)
-            if (p) res.send(JSON.stringify(p))
+            if (p) {
+                res.send(JSON.stringify(p))
+            }
             else throw Error('Портфолио не найдено')
+        } else {
+            throw Error('Не передано ID')
+        }
+    } catch (e) {
+        res.send({ error: e.message })
+    }
+});
+
+app.get('/chart-values', async (req, res) => {
+    try {
+        if (req.query?.id) {
+            updateCurrentPortfolioHistory('24h', 288, req.query?.id)
+            updateCurrentPortfolioHistory('7d', 168, req.query?.id)
+            updateCurrentPortfolioHistory('1m', 30, req.query?.id)
+            updateCurrentPortfolioHistory('3m', 90, req.query?.id)
+            updateCurrentPortfolioHistory('1y', 122, req.query?.id)
+            const p = await getChartValues(req.query?.id);
+            if (p) {
+                res.send(JSON.stringify(p))
+            }
+            else throw Error('Chart не найдено')
         } else {
             throw Error('Не передано ID')
         }
@@ -112,11 +205,6 @@ app.post('/add-to-portfolio', async (req, res) => {
     }
 });
 
-function originIsAllowed(origin) {
-    // put logic here to detect whether the specified origin is allowed.
-    return true;
-}
-
 wsServer.on('request', function(request) {
     const connection = request.accept(null, request.origin);
 
@@ -127,6 +215,14 @@ wsServer.on('request', function(request) {
                 const p = await getPortfolio(1);
                 connection.sendUTF(JSON.stringify(p));
             }, 30000)
+        }
+        if (response.method === 'getChartValues' && response.id) {
+            const p = await getChartValues(response.id);
+            connection.sendUTF(JSON.stringify(p));
+            setInterval(async () => {
+                const p = await getChartValues(response.id);
+                connection.sendUTF(JSON.stringify(p));
+            }, 300000)
         }
     });
     connection.on('close', function(reasonCode, description) {
