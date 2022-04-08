@@ -14,6 +14,28 @@ const handleJson = (item) => {
     }
 }
 
+const getAllTokens = async () => {
+    try {
+        const res = await axios.get('https://s3.coinmarketcap.com/generated/core/crypto/cryptos.json')
+        const data = res.data?.values.map((t) => ({ name: t[1], cryptocurrencyId: t[2], image: `https://s2.coinmarketcap.com/static/img/coins/64x64/${t[0]}.png` }))
+        fs.writeFileSync('allTokens.json', JSON.stringify(data));
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+
+const searchTokens = (value) => {
+    try {
+        let tokens = fs.readFileSync('allTokens.json');
+        let allTokens = JSON.parse(tokens);
+        const result = allTokens.filter((t) => t.name.includes(value) || t.cryptocurrencyId.includes(value))
+        return result?.slice(0, 10);
+    } catch (e) {
+        console.log(e)
+    }
+}
+
 // let res1 = fs.readFileSync('sdfsdf.json');
 // let allData1 = JSON.parse(res1);
 // allData1 = allData1.map((o) => {
@@ -62,6 +84,7 @@ setInterval(() => {
 setInterval(() => {
     updatePortfolioHistory('1m', 30)
     updatePortfolioHistory('3m', 90)
+    getAllTokens()
 }, 86400000)
 
 setInterval(() => {
@@ -107,7 +130,7 @@ const getPortfolio = async (id) => {
             fs.writeFileSync('portfolios.json', JSON.stringify(allData));
             return currentPortfolio
         } catch (e) {
-            console.log(e.message)
+            console.log(e)
             return currentPortfolio
         }
     } else {
@@ -223,6 +246,10 @@ wsServer.on('request', function(request) {
                 const p = await getChartValues(response.id);
                 connection.sendUTF(JSON.stringify(p));
             }, 300000)
+        }
+        if (response.method === 'SearchToken' && response.value) {
+            const p = searchTokens(response.value);
+            connection.sendUTF(JSON.stringify(p));
         }
     });
     connection.on('close', function(reasonCode, description) {
