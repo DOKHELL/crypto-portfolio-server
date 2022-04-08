@@ -131,7 +131,7 @@ const getPortfolio = async (id) => {
             fs.writeFileSync('portfolios.json', JSON.stringify(allData));
             return currentPortfolio
         } catch (e) {
-            console.log(e)
+            console.log('Too many request')
             return currentPortfolio
         }
     } else {
