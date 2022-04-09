@@ -64,7 +64,12 @@ const getAllChartsValues = async (id, days = 1, interval, len, size) => {
             if (res.length < result.length) {
                 const r = result.length - res.length;
                 for (let i = 0; i < r; i++) {
-                    res.unshift([result[i][0], res[0][1]])
+                    if (res[0]) {
+                        res.unshift([result[i][0], res[0][1]])
+                    }
+                    if (res[1]) {
+                        res.unshift([result[i][0], res[1][1]])
+                    }
                 }
             }
             result = result.map((item, index) => {
