@@ -5,8 +5,8 @@ const { handleJson } = require("./helpers");
 
 const getAllTokens = async () => {
     try {
-        const res = await axios.get('https://api.coingecko.com/api/v3/coins/list')
-        const data = res.data?.map((t) => ({ name: t.name, symbol: t.symbol, cryptocurrencyId: t.id, image: `https://s2.coinmarketcap.com/static/img/coins/64x64/1.png` }))
+        const res = await axios.get('https://api.coingecko.com/api/v3/search')
+        const data = res.data?.coins?.map((t) => ({ name: t.name, symbol: t.symbol, cryptocurrencyId: t.id, image: t.large || t.thumb }))
         fs.writeFileSync('allTokens.json', JSON.stringify(data));
     } catch (e) {
         console.log(e.message)
