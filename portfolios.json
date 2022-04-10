@@ -1,1 +1,133 @@
-[{"id":1,"tokenList":[{"amount":15.99,"buyAvgPrice":3.03,"cryptoHoldings":34.0587,"cryptocurrencyId":"immutable-x","priceChangePercentage24h":1.12735,"name":"Immutable X","symbol":"imx","historyList":[{"amount":15.99,"cryptocurrencyId":"immutable-x","price":3.03,"name":"Immutable X","symbol":"imx","timestamp":1643232600000}],"image":"https://assets.coingecko.com/coins/images/17233/large/imx.png?1636691817","currentPrice":2.13},{"amount":50.68,"buyAvgPrice":1.97,"cryptoHoldings":79.0608,"cryptocurrencyId":"biconomy","priceChangePercentage24h":2.36481,"name":"Biconomy","symbol":"bico","historyList":[{"amount":50.68,"cryptocurrencyId":"biconomy","price":1.97,"name":"Biconomy","symbol":"bico","timestamp":1643230500000}],"image":"https://assets.coingecko.com/coins/images/21061/large/biconomy_logo.jpg?1638269749","currentPrice":1.56},{"amount":0.8864,"buyAvgPrice":131.5,"cryptoHoldings":86.308768,"cryptocurrencyId":"metis-token","priceChangePercentage24h":1.57963,"name":"Metis Token","symbol":"metis","historyList":[{"amount":0.8864,"cryptocurrencyId":"metis-token","price":131.5,"name":"MeMetis Token","symbol":"metis","timestamp":1643505600000}],"image":"https://assets.coingecko.com/coins/images/15595/large/metis.PNG?1621298076","currentPrice":97.37},{"amount":155.18,"buyAvgPrice":0.643,"cryptoHoldings":91.06396904,"cryptocurrencyId":"centrifuge","priceChangePercentage24h":-4.982,"name":"Centrifuge","symbol":"cfg","historyList":[{"amount":155.18,"cryptocurrencyId":"centrifuge","price":0.643,"name":"Centrifuge","symbol":"cfg","timestamp":1643475000000}],"image":"https://assets.coingecko.com/coins/images/15380/large/centrifuge.PNG?1620695821","currentPrice":0.586828},{"amount":1000,"buyAvgPrice":0.1064,"cryptoHoldings":154.001,"cryptocurrencyId":"zam-io","priceChangePercentage24h":-3.50404,"name":"Zam.io","symbol":"zam","historyList":[{"amount":1000,"cryptocurrencyId":"zam-io","price":0.1064,"name":"Zam.io","symbol":"zam","timestamp":1643926500000}],"image":"https://assets.coingecko.com/coins/images/19522/large/zam.png?1635324134","currentPrice":0.154001},{"amount":16.7953,"buyAvgPrice":5.99,"cryptoHoldings":201.879506,"cryptocurrencyId":"genopets","priceChangePercentage24h":-2.16593,"name":"Genopets","symbol":"gene","historyList":[{"amount":16.7953,"cryptocurrencyId":"genopets","price":5.99,"name":"Genopets","symbol":"gene","timestamp":1643393400000}],"image":"https://assets.coingecko.com/coins/images/20360/large/gene-token.png?1636945172","currentPrice":12.02}]}]
+[
+  {
+    "id": 1,
+    "tokenList": [
+      {
+        "amount": 15.99,
+        "buyAvgPrice": 3.03,
+        "cryptoHoldings": 33.8988,
+        "cryptocurrencyId": "immutable-x",
+        "priceChangePercentage24h": -1.16657,
+        "name": "Immutable X",
+        "symbol": "imx",
+        "historyList": [
+          {
+            "amount": 15.99,
+            "cryptocurrencyId": "immutable-x",
+            "price": 3.03,
+            "name": "Immutable X",
+            "symbol": "imx",
+            "timestamp": 1643232600000
+          }
+        ],
+        "image": "https://assets.coingecko.com/coins/images/17233/large/imx.png?1636691817",
+        "currentPrice": 2.12
+      },
+      {
+        "amount": 50.68,
+        "buyAvgPrice": 1.97,
+        "cryptoHoldings": 77.0336,
+        "cryptocurrencyId": "biconomy",
+        "priceChangePercentage24h": -1.58969,
+        "name": "Biconomy",
+        "symbol": "bico",
+        "historyList": [
+          {
+            "amount": 50.68,
+            "cryptocurrencyId": "biconomy",
+            "price": 1.97,
+            "name": "Biconomy",
+            "symbol": "bico",
+            "timestamp": 1643230500000
+          }
+        ],
+        "image": "https://assets.coingecko.com/coins/images/21061/large/biconomy_logo.jpg?1638269749",
+        "currentPrice": 1.52
+      },
+      {
+        "amount": 0.8864,
+        "buyAvgPrice": 131.5,
+        "cryptoHoldings": 86.15808,
+        "cryptocurrencyId": "metis-token",
+        "priceChangePercentage24h": 1.01011,
+        "name": "Metis Token",
+        "symbol": "metis",
+        "historyList": [
+          {
+            "amount": 0.8864,
+            "cryptocurrencyId": "metis-token",
+            "price": 131.5,
+            "name": "MeMetis Token",
+            "symbol": "metis",
+            "timestamp": 1643505600000
+          }
+        ],
+        "image": "https://assets.coingecko.com/coins/images/15595/large/metis.PNG?1621298076",
+        "currentPrice": 97.2
+      },
+      {
+        "amount": 155.18,
+        "buyAvgPrice": 0.643,
+        "cryptoHoldings": 93.50200202,
+        "cryptocurrencyId": "centrifuge",
+        "priceChangePercentage24h": 0.55656,
+        "name": "Centrifuge",
+        "symbol": "cfg",
+        "historyList": [
+          {
+            "amount": 155.18,
+            "cryptocurrencyId": "centrifuge",
+            "price": 0.643,
+            "name": "Centrifuge",
+            "symbol": "cfg",
+            "timestamp": 1643475000000
+          }
+        ],
+        "image": "https://assets.coingecko.com/coins/images/15380/large/centrifuge.PNG?1620695821",
+        "currentPrice": 0.602539
+      },
+      {
+        "amount": 1000,
+        "buyAvgPrice": 0.1064,
+        "cryptoHoldings": 167.77100000000002,
+        "cryptocurrencyId": "zam-io",
+        "priceChangePercentage24h": 6.60133,
+        "name": "Zam.io",
+        "symbol": "zam",
+        "historyList": [
+          {
+            "amount": 1000,
+            "cryptocurrencyId": "zam-io",
+            "price": 0.1064,
+            "name": "Zam.io",
+            "symbol": "zam",
+            "timestamp": 1643926500000
+          }
+        ],
+        "image": "https://assets.coingecko.com/coins/images/19522/large/zam.png?1635324134",
+        "currentPrice": 0.167771
+      },
+      {
+        "amount": 16.7953,
+        "buyAvgPrice": 5.99,
+        "cryptoHoldings": 200.53588200000002,
+        "cryptocurrencyId": "genopets",
+        "priceChangePercentage24h": -1.16289,
+        "name": "Genopets",
+        "symbol": "gene",
+        "historyList": [
+          {
+            "amount": 16.7953,
+            "cryptocurrencyId": "genopets",
+            "price": 5.99,
+            "name": "Genopets",
+            "symbol": "gene",
+            "timestamp": 1643393400000
+          }
+        ],
+        "image": "https://assets.coingecko.com/coins/images/20360/large/gene-token.png?1636945172",
+        "currentPrice": 11.94
+      }
+    ]
+  }
+]

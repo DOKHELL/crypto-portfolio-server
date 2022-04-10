@@ -31,14 +31,31 @@ const getChartValue = async (currentToken, days = 1, interval, name) => {
         const prices = res?.data?.prices;
         const calculatedData = prices.map(item => {
             const total = currentToken.historyList.reduce((acc, next) => {
-                if (next.timestamp <= item[0]) {
+                if (days === 1) {
+                    if (next.timestamp - 300000 <= item[0]) {
+                        return acc + item[1] * next.amount;
+                    } else return 0;
+                }
+                if (days === 7) {
+                    if (next.timestamp - 3000000 <= item[0]) {
+                        return acc + item[1] * next.amount;
+                    } else return 0;
+                }
+                if (days === 'max') {
+                    if (next.timestamp - 3000000 <= item[0]) {
+                        return acc + item[1] * next.amount;
+                    } else return 0;
+                } else if (next.timestamp - 3000000 <= item[0]) {
                     return acc + item[1] * next.amount;
                 }
-                return acc;
+                return 0;
             }, 0)
             return [item[0], total]
         })
-        return calculatedData;
+        if (days === 'max') {
+            return calculatedData.filter((o) => o && !!o[1]);
+        }
+        return calculatedData.filter((o) => o);
     } catch (e) {
         console.log(e)
         return [];
@@ -46,40 +63,44 @@ const getChartValue = async (currentToken, days = 1, interval, name) => {
 }
 
 
-const getAllChartsValues = async (id, days = 1, interval, len, size) => {
+const getAllChartsValues = async (id, days = 1, interval) => {
     try {
         let res = fs.readFileSync('portfolios.json');
         let allData = JSON.parse(res);
         const currentPortfolio = allData.find((item) => +item.id === +id);
         let result = []
-        const now = Date.now();
-        let date = now;
-        for (let i = 0; i <= len; i++) {
-            const g = date - size;
-            result.unshift([g, 0])
-            date = g
-        }
         for await (let currentToken of currentPortfolio?.tokenList) {
             let res = await getChartValue(currentToken, days, interval, currentToken.cryptocurrencyId)
-            if (res.length < result.length) {
-                const r = result.length - res.length;
-                for (let i = 0; i < r; i++) {
-                    if (res[0]) {
-                        res.unshift([result[i][0], res[0][1]])
-                    }
-                    if (res[1]) {
-                        res.unshift([result[i][0], res[1][1]])
-                    }
-                }
-            }
-            result = result.map((item, index) => {
-                if (res[index]) {
-                    return [item[0], +item[1] + +res[index][1]]
-                }
-                return item;
-            })
+            result.push(res)
         }
-        return result;
+        const maxArr = result.sort((o, n) => n.length - o.length)[0];
+        const maxLength = maxArr.length
+        result = result.map((o) => {
+            if (o.length < maxLength) {
+                for (let i = 0; o.length < maxLength; i++) {
+                  o.unshift([maxArr[i][0], o[0] ? o[0][1] : 0])
+                }
+                return o;
+            }
+            return o;
+        })
+        if (days === 'max') {
+            console.log(maxLength)
+        }
+        const fullResult = result.reduce((acc, next, index) => {
+            if (index === 0) {
+                acc = next;
+                return acc;
+            }
+            acc = acc.map((p, inx) => {
+                if (p[1] && next[inx]) {
+                    return [p[0], +p[1] + +next[inx][1]]
+                }
+                return p;
+            })
+            return acc;
+        }, [])
+        return fullResult;
     } catch (e) {
         console.log(e)
     }
@@ -139,11 +160,11 @@ const addToPortfolio = async (id, data) => {
 }
 
 const getAllTimeShotCharts = async (id) => {
-    const day = await getAllChartsValues(id, 1, '1', 288, 300000);
-    const week = await getAllChartsValues(id, 7, 'hour', 168, 3600000);
-    const month = await getAllChartsValues(id, 30, 'daily', 30, 86400000);
-    const quarter = await getAllChartsValues(id, 90, 'daily', 90, 86400000);
-    const all = await getAllChartsValues(id, 'max', 'daily', 2437, 259200000);
+    const day = await getAllChartsValues(id, 1, '1');
+    const week = await getAllChartsValues(id, 7, 'hour');
+    const month = await getAllChartsValues(id, 30, 'daily');
+    const quarter = await getAllChartsValues(id, 90, 'daily');
+    const all = await getAllChartsValues(id, 'max', 'daily');
     const dayData = day?.filter(e => e && e[1]);
     const weekData = week?.filter(e => e && e[1]);
     const monthData = month?.filter(e => e && e[1]);
