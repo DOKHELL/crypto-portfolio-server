@@ -159,27 +159,34 @@ const addToPortfolio = async (id, data) => {
     return true;
 }
 
-const getAllTimeShotCharts = async (id) => {
-    const day = await getAllChartsValues(id, 1, '1');
-    const week = await getAllChartsValues(id, 7, 'hour');
-    const month = await getAllChartsValues(id, 30, 'daily');
-    const quarter = await getAllChartsValues(id, 90, 'daily');
-    const all = await getAllChartsValues(id, 'max', 'daily');
-    const dayData = day?.filter(e => e && e[1]);
-    const weekData = week?.filter(e => e && e[1]);
-    const monthData = month?.filter(e => e && e[1]);
-    const quarterData = quarter?.filter(e => e && e[1]);
-    const allData = all?.filter(e => e && e[1]);
-    weekData.push(dayData[dayData.length - 1])
-    monthData.push(dayData[dayData.length - 1])
-    quarterData.push(dayData[dayData.length - 1])
-    allData.push(dayData[dayData.length - 1])
+const getAllTimeShotCharts = async (id, period) => {
+    const interval = period === 1 ? '1' : period === 7 ? 'hour' : 'daily';
+    const data = await getAllChartsValues(id, period, interval);
+    // const day = await getAllChartsValues(id, 1, '1');
+    // const week = await getAllChartsValues(id, 7, 'hour');
+    // const month = await getAllChartsValues(id, 30, 'daily');
+    // const quarter = await getAllChartsValues(id, 90, 'daily');
+    // const all = await getAllChartsValues(id, 'max', 'daily');
+    const finalData = data?.filter(e => e && e[1]);
+    // const dayData = day?.filter(e => e && e[1]);
+    // const weekData = week?.filter(e => e && e[1]);
+    // const monthData = month?.filter(e => e && e[1]);
+    // const quarterData = quarter?.filter(e => e && e[1]);
+    // const allData = all?.filter(e => e && e[1]);
+    // weekData.push(dayData[dayData.length - 1])
+    // weekData.push(dayData[dayData.length - 1])
+    // monthData.push(dayData[dayData.length - 1])
+    // quarterData.push(dayData[dayData.length - 1])
+    // allData.push(dayData[dayData.length - 1])
+    // return {
+    //     historyChart24h: dayData,
+    //     historyChart7d:  weekData,
+    //     historyChart1m:  monthData,
+    //     historyChart3m:  quarterData,
+    //     historyChart1y:  allData,
+    // }
     return {
-        historyChart24h: dayData,
-        historyChart7d:  weekData,
-        historyChart1m:  monthData,
-        historyChart3m:  quarterData,
-        historyChart1y:  allData,
+        historyChart: finalData,
     }
 }
 

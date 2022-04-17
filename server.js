@@ -46,8 +46,8 @@ app.get('/get-portfolio', async (req, res) => {
 
 app.get('/chart-values', async (req, res) => {
     try {
-        if (req.query?.id) {
-            const p = await getAllTimeShotCharts(req.query?.id)
+        if (req.query?.id && req.query?.period) {
+            const p = await getAllTimeShotCharts(req.query?.id, Number(req.query?.period))
             res.send(JSON.stringify(p));
         } else {
             throw Error('Не передано ID')
@@ -88,9 +88,9 @@ wsServer.on('request', function(request) {
                 connection.sendUTF(JSON.stringify({action: 'portfolio', data: p}));
             }, 300000)
         }
-        if (response.method === 'getChartValues' && response.id) {
+        if (response.method === 'getChartValues' && response.id && response?.period) {
             setInterval(async () => {
-                const p = await getAllTimeShotCharts(response.id)
+                const p = await getAllTimeShotCharts(response.id, Number(response?.period))
                 connection.sendUTF(JSON.stringify({action: 'chart', data: p}));
             }, 300000)
         }
