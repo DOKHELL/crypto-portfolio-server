@@ -163,7 +163,7 @@ const removeToken = async (id, tokenId) => {
     let res = fs.readFileSync('portfolios.json');
     let allData = JSON.parse(res);
     let currentPortfolio = allData.find((item) => +item.id === +id);
-    currentPortfolio = currentPortfolio?.tokenList?.filter((item) => item.cryptocurrencyId !== tokenId)
+    currentPortfolio.tokenList = currentPortfolio?.tokenList?.filter((item) => item.cryptocurrencyId !== tokenId)
     fs.writeFileSync('portfolios.json', JSON.stringify(allData));
     return true;
 }
