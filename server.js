@@ -3,6 +3,7 @@ const {
     getAllTokens,
     searchTokens,
     getPortfolio,
+    removeToken,
     addToPortfolio,
     getAllTimeShotCharts,
 } = require('./actions')
@@ -66,6 +67,22 @@ app.post('/add-to-portfolio', async (req, res) => {
         if (!req.body.symbol) throw Error('Не передано symbol')
         if (req.query?.id) {
             const p = await addToPortfolio(req.query?.id, req.body)
+            if (p) {
+                res.send({ success: true })
+            }
+        } else {
+            throw Error('Не передано ID')
+        }
+    } catch (e) {
+        res.send({ error: e.message })
+    }
+});
+
+app.post('/remove-token', async (req, res) => {
+    try {
+        if (!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
+        if (req.query?.id) {
+            const p = await removeToken(req.query?.id, req.body.cryptocurrencyId)
             if (p) {
                 res.send({ success: true })
             }

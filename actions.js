@@ -159,6 +159,15 @@ const addToPortfolio = async (id, data) => {
     return true;
 }
 
+const removeToken = async (id, tokenId) => {
+    let res = fs.readFileSync('portfolios.json');
+    let allData = JSON.parse(res);
+    let currentPortfolio = allData.find((item) => +item.id === +id);
+    currentPortfolio = currentPortfolio?.tokenList?.filter((item) => item.cryptocurrencyId !== tokenId)
+    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
+    return true;
+}
+
 const getAllTimeShotCharts = async (id, period) => {
     const interval = period === 1 ? '1' : period === 7 ? 'hour' : 'daily';
     const data = await getAllChartsValues(id, period, interval);
@@ -198,4 +207,5 @@ module.exports = {
     getPortfolio,
     addToPortfolio,
     getAllTimeShotCharts,
+    removeToken,
 }
