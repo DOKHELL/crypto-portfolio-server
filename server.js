@@ -47,7 +47,7 @@ app.get('/get-portfolio', async (req, res) => {
 app.get('/chart-values', async (req, res) => {
     try {
         if (req.query?.id && req.query?.period) {
-            const p = await getAllTimeShotCharts(req.query?.id, Number(req.query?.period))
+            const p = await getAllTimeShotCharts(req.query?.id, req.query?.period === 'max' ? req.query?.period : Number(req.query?.period))
             res.send(JSON.stringify(p));
         } else {
             throw Error('Не передано ID')
