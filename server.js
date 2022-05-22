@@ -6,6 +6,8 @@ const {
     removeToken,
     addToPortfolio,
     getAllTimeShotCharts,
+    removeTransaction,
+    changeTransaction,
 } = require('./actions')
 
 setInterval(() => {
@@ -58,6 +60,38 @@ app.get('/chart-values', async (req, res) => {
     }
 });
 
+app.post('/change-transaction', async (req, res) => {
+    try{
+        if(!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
+        if (req.query?.id) {
+           const p = changeTransaction(req.query?.id,req.body)
+           if (p) {
+            res.send({ success: true })
+           }
+        } else {
+            throw Error('Не передано ID portfolio')
+        }
+    }catch(e) {
+        res.send({ error: e.message })
+    }
+})
+
+app.post('/remove-transaction', async (req, res) => {
+    try{
+        if(!req.body.id) throw Error('Не передано id')
+        if (req.query?.id) {
+           const p = removeTransaction(req.query?.id,req.body)
+           if (p) {
+            res.send({ success: true })
+           }
+        } else {
+            throw Error('Не передано ID portfolio')
+        }
+    }catch(e) {
+        res.send({ error: e.message })
+    }
+})
+
 app.post('/add-to-portfolio', async (req, res) => {
     try {
         if (!req.body.amount) throw Error('Не передано amount')
@@ -65,6 +99,7 @@ app.post('/add-to-portfolio', async (req, res) => {
         if (!req.body.price) throw Error('Не передано price')
         if (!req.body.name) throw Error('Не передано name')
         if (!req.body.symbol) throw Error('Не передано symbol')
+        if(!req.body.type) throw Error('Не передан type')
         if (req.query?.id) {
             const p = await addToPortfolio(req.query?.id, req.body)
             if (p) {

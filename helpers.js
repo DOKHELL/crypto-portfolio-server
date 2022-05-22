@@ -7,7 +7,7 @@ const handleJson = (item) => {
         priceChangePercentage24h: 0,
         name: item.name,
         symbol: item.symbol,
-        historyList: [{...item, timestamp: item.timestamp ? item.timestamp : Date.now()}]
+        historyList: [{...item, timestamp: item.timestamp ? item.timestamp : Date.now(),id: Math.floor(Math.random() * 100000 * Date.now())}]
     }
 }
 

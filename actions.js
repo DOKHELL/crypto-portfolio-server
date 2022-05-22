@@ -9,7 +9,7 @@ const getAllTokens = async () => {
         const data = res.data?.coins?.map((t) => ({ name: t.name, symbol: t.symbol, cryptocurrencyId: t.id, image: t.large || t.thumb }))
         fs.writeFileSync('allTokens.json', JSON.stringify(data));
     } catch (e) {
-        console.log(e.message)
+        console.log('err')
     }
 }
 
@@ -21,7 +21,7 @@ const searchTokens = (v) => {
         const result = allTokens.filter((t) => t.name.toLowerCase().includes(value) || t.symbol.toLowerCase().includes(value))
         return result?.slice(0, 10);
     } catch (e) {
-        console.log(e.message)
+        console.log('err')
     }
 }
 
@@ -57,7 +57,7 @@ const getChartValue = async (currentToken, days = 1, interval, name) => {
         }
         return calculatedData.filter((o) => o);
     } catch (e) {
-        console.log(e)
+        console.log('err')
         return [];
     }
 }
@@ -102,7 +102,7 @@ const getAllChartsValues = async (id, days = 1, interval) => {
         }, [])
         return fullResult;
     } catch (e) {
-        console.log(e)
+        console.log('err')
     }
 }
 
@@ -129,19 +129,73 @@ const getPortfolio = async (id) => {
                 item.priceChangePercentage24h = price_change_percentage_24h;
                 const totalAmount = item.historyList.reduce((acc, next) => { return +acc + +next.amount }, 0)
                 item.amount = totalAmount;
-                const buyAvgPrice = item.historyList.reduce((acc, next) => {return +acc + +next.price}, 0) / item.historyList?.length;
+                const filterBuyAvgPriceByType = item.historyList.filter(item => item.type === 'Buy')
+                const buyAvgPrice = item.historyList.reduce((acc, next) => {
+                    if (next.type === 'Buy') {
+                        return +acc + +next.price
+                    }
+                
+                    return acc
+                }, 0) / filterBuyAvgPriceByType?.length;
                 item.buyAvgPrice = buyAvgPrice;
                 item.cryptoHoldings = item.amount * item.currentPrice;
             })
             fs.writeFileSync('portfolios.json', JSON.stringify(allData));
             return currentPortfolio
         } catch (e) {
-            console.log(e.message)
+            console.log('err')
             return currentPortfolio
         }
     } else {
         return null;
     }
+}
+
+const changeTransaction = (idPortfolio, data) => {
+    const nData = data;
+    let res = fs.readFileSync('portfolios.json');
+    let allData = JSON.parse(res);
+    const currentPortfolio = allData.find((item) => +item.id === +idPortfolio);
+    const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
+    let indexToken = null
+     currentToken.historyList.find((item,index) => {
+        
+        if(item.id === nData.id) {
+            console.log(index);
+            indexToken = index
+        }
+     })
+     currentToken.historyList[indexToken].timestamp = nData.timestamp
+     currentToken.historyList[indexToken].price = nData.price
+     currentToken.historyList[indexToken].amount = nData.amount
+     console.log(currentToken.historyList);
+    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
+    return true
+}
+
+const removeToken = async (id, tokenId) => {
+    let res = fs.readFileSync('portfolios.json');
+    let allData = JSON.parse(res);
+    let currentPortfolio = allData.find((item) => +item.id === +id);
+    currentPortfolio.tokenList = currentPortfolio?.tokenList?.filter((item) => item.cryptocurrencyId !== tokenId)
+    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
+    return true;
+}
+
+const removeTransaction = (idPortfolio, data) => {
+    const nData = data;
+    let res = fs.readFileSync('portfolios.json');
+    let allData = JSON.parse(res);
+    const currentPortfolio = allData.find((item) => +item.id === +idPortfolio);
+    const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
+    // if(currentToken.historyList.length === 1) {
+    //     currentToken.historyList = currentToken.historyList.filter(item => item.id !== nData.id)
+    //     removeToken(idPortfolio, nData.cryptocurrencyId)
+    //     return true
+    // }
+    currentToken.historyList = currentToken.historyList.filter(item => item.id !== nData.id)
+    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
+    return true
 }
 
 const addToPortfolio = async (id, data) => {
@@ -151,19 +205,11 @@ const addToPortfolio = async (id, data) => {
     const currentPortfolio = allData.find((item) => +item.id === +id);
     const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
     if (currentToken) {
-        currentToken.historyList = [...currentToken.historyList, {...nData, timestamp:  nData.timestamp ? nData.timestamp : Date.now()}]
+         currentToken.historyList = [...currentToken.historyList, {...nData, timestamp:  nData.timestamp ? nData.timestamp : Date.now(), id: Math.floor(Math.random() * 100000 * Date.now())}]
+       
     } else {
         currentPortfolio?.tokenList.push(handleJson(nData))
     }
-    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
-    return true;
-}
-
-const removeToken = async (id, tokenId) => {
-    let res = fs.readFileSync('portfolios.json');
-    let allData = JSON.parse(res);
-    let currentPortfolio = allData.find((item) => +item.id === +id);
-    currentPortfolio.tokenList = currentPortfolio?.tokenList?.filter((item) => item.cryptocurrencyId !== tokenId)
     fs.writeFileSync('portfolios.json', JSON.stringify(allData));
     return true;
 }
@@ -207,5 +253,7 @@ module.exports = {
     getPortfolio,
     addToPortfolio,
     getAllTimeShotCharts,
+    removeTransaction,
     removeToken,
+    changeTransaction,
 }
