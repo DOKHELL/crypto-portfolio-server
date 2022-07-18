@@ -1,3 +1,6 @@
+const userSchema = require('./schemas/user-schema')
+
+
 const handleJson = (item) => {
     return {
         amount: item.amount,
@@ -11,8 +14,25 @@ const handleJson = (item) => {
     }
 }
 
+const findUser = async (email) => {
+   return await userSchema.findOne({email})
+}
+
+const recalculatePortfoliosPrise = (portfolios) => {
+       return portfolios.reduce((initValue,portfolio) => {
+          const totalPrice = portfolio.cryptocurrencies.reduce((total,item) => {
+                return total += item.cryptoHoldings
+            },0)
+            portfolio.totalPrice = totalPrice
+            initValue.push(portfolio)
+            return initValue
+        },[])
+}
+
 
 
 module.exports = {
     handleJson,
+    findUser,
+    recalculatePortfoliosPrise
 }

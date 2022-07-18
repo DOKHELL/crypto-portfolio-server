@@ -1,4 +1,7 @@
 const express = require('express');
+const jwtDecode = require('jwt-decode')
+// const mongoose = require('mongoose')
+const userSchema = require('./schemas/user-schema')
 const {
     getAllTokens,
     searchTokens,
@@ -9,6 +12,10 @@ const {
     removeTransaction,
     changeTransaction,
 } = require('./actions')
+
+const connectDB = require('./db')
+
+connectDB()
 
 setInterval(() => {
     getAllTokens()
@@ -31,16 +38,46 @@ app.use(function (req, res, next) {
 
 app.use(bodyParser.json({ extended: true }));
 
+app.post('/auth', async (req, res) => {
+    try{
+        const result = await userSchema.findOne({email: req.body.email})
+        
+
+        const sendData = {
+            email: result?.email,
+            name: result?.name,
+            picture: result?.picture,
+            portfolios: result?.portfolios
+        }
+         
+        
+        if(!result) {
+            const dataForCreating = {...req.body, portfolios: [{name: 'Main Portfolio',id:Math.floor(Math.random() * 10**6), cryptocurrencies: []}]}
+            console.log('user was created');
+            await new userSchema(dataForCreating).save()
+            
+            res.send(dataForCreating)
+    
+        }else{
+            console.log(sendData);
+            res.send(sendData)
+        }
+    }catch(e) {
+        res.send(e)
+    }
+})
+
 app.get('/get-portfolio', async (req, res) => {
     try {
-        if (req.query?.id) {
-            const p = await getPortfolio(req.query?.id)
-            if (p) {
-                res.send(JSON.stringify(p))
+        const decode = jwtDecode(req.query.token)
+        if (decode) {
+            const response = await getPortfolio(decode)
+            if (response) {
+                res.send(JSON.stringify(response))
             }
             else throw Error('Портфолио не найдено')
         } else {
-            throw Error('Не передано ID')
+            throw Error('Не передано token')
         }
     } catch (e) {
         res.send({ error: e.message })
@@ -49,11 +86,12 @@ app.get('/get-portfolio', async (req, res) => {
 
 app.get('/chart-values', async (req, res) => {
     try {
-        if (req.query?.id && req.query?.period) {
-            const p = await getAllTimeShotCharts(req.query?.id, req.query?.period === 'max' ? req.query?.period : Number(req.query?.period))
+        if (req.query?.token && req.query?.period) {
+            const decode = jwtDecode(req.query.token)
+            const p = await getAllTimeShotCharts(decode, req.query?.period === 'max' ? req.query?.period : Number(req.query?.period))
             res.send(JSON.stringify(p));
         } else {
-            throw Error('Не передано ID')
+            throw Error('Не передан token или period')
         }
     } catch (e) {
         res.send({ error: e.message })
@@ -63,13 +101,14 @@ app.get('/chart-values', async (req, res) => {
 app.post('/change-transaction', async (req, res) => {
     try{
         if(!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
-        if (req.query?.id) {
-           const p = changeTransaction(req.query?.id,req.body)
+        if (req.query?.token) {
+            const decode = jwtDecode(req.query.token)
+           const p = changeTransaction(decode,req.body)
            if (p) {
             res.send({ success: true })
            }
         } else {
-            throw Error('Не передано ID portfolio')
+            throw Error('Не передан token')
         }
     }catch(e) {
         res.send({ error: e.message })
@@ -78,14 +117,14 @@ app.post('/change-transaction', async (req, res) => {
 
 app.post('/remove-transaction', async (req, res) => {
     try{
-        if(!req.body.id) throw Error('Не передано id')
-        if (req.query?.id) {
-           const p = removeTransaction(req.query?.id,req.body)
+        if (req.query?.token) {
+            const decode = jwtDecode(req.query.token)
+           const p = removeTransaction(decode,req.body)
            if (p) {
             res.send({ success: true })
            }
         } else {
-            throw Error('Не передано ID portfolio')
+            throw Error('Не передан token')
         }
     }catch(e) {
         res.send({ error: e.message })
@@ -100,13 +139,14 @@ app.post('/add-to-portfolio', async (req, res) => {
         if (!req.body.name) throw Error('Не передано name')
         if (!req.body.symbol) throw Error('Не передано symbol')
         if(!req.body.type) throw Error('Не передан type')
-        if (req.query?.id) {
-            const p = await addToPortfolio(req.query?.id, req.body)
+        if (req.query?.token) {
+            const decode = jwtDecode(req.query.token)
+            const p = await addToPortfolio(decode, req.body)
             if (p) {
                 res.send({ success: true })
             }
         } else {
-            throw Error('Не передано ID')
+            throw Error('Не передано token')
         }
     } catch (e) {
         res.send({ error: e.message })
@@ -116,13 +156,14 @@ app.post('/add-to-portfolio', async (req, res) => {
 app.post('/remove-token', async (req, res) => {
     try {
         if (!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
-        if (req.query?.id) {
-            const p = await removeToken(req.query?.id, req.body.cryptocurrencyId)
+        if (req.query?.token) {
+            const decode = jwtDecode(req.query.token)
+            const p = await removeToken(decode, req.body.cryptocurrencyId)
             if (p) {
                 res.send({ success: true })
             }
         } else {
-            throw Error('Не передано ID')
+            throw Error('Не передан token')
         }
     } catch (e) {
         res.send({ error: e.message })
