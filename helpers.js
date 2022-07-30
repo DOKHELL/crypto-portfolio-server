@@ -21,7 +21,7 @@ const findUser = async (email) => {
 const recalculatePortfoliosPrise = (portfolios) => {
        return portfolios.reduce((initValue,portfolio) => {
           const totalPrice = portfolio.cryptocurrencies.reduce((total,item) => {
-                return total += item.cryptoHoldings
+                return total += item.historyList.reduce((init,item) => init += (+item.amount * +item.price) ,0)
             },0)
             portfolio.totalPrice = totalPrice
             initValue.push(portfolio)
