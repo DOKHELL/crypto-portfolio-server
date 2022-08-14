@@ -41,10 +41,8 @@ const createPortfolio = async (obj,data) => {
         const currentUser = await findUser(obj.email)
         const dataForCreating = { name: data.name,id:Math.floor(Math.random() * 10**6), cryptocurrencies: []}
         currentUser.portfolios.push(dataForCreating)
-    
-        const result = await userSchema.findOneAndUpdate({email: obj.email}, currentUser,{new: true})
 
-        console.log(recalculatePortfoliosPrise(currentUser.portfolios));
+        const result = await userSchema.findOneAndUpdate({email: obj.email}, currentUser,{new: true})
 
         return result
     }catch(e) {
@@ -89,11 +87,11 @@ const getAllChartsValues = async (obj, days = 1, interval,id) => {
         // const currentPortfolio = allData.find((item) => +item.id === +id);
         const currentUser = await findUser(obj.email)
         const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
-    
+
         let portfolio = currentPortfolio || currentUser.portfolios[0]
 
         let result = []
-       
+
         for await (let currentToken of portfolio.cryptocurrencies) {
             let res = await getChartValue(currentToken, days, interval, currentToken.cryptocurrencyId)
             result.push(res)
@@ -130,30 +128,29 @@ const getAllChartsValues = async (obj, days = 1, interval,id) => {
 
 const removeTransaction = async (obj, data,id) => {
     const nData = data;
-    
+
     const currentUser = await findUser(obj.email)
     const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
-    
+
     let portfolio = currentPortfolio || currentUser.portfolios[0]
     const currentToken = portfolio.cryptocurrencies?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
-    
+
     currentToken.historyList = currentToken.historyList.filter(item => item.id !== nData.id)
-    
+
     await userSchema.findOneAndUpdate({email: obj.email}, currentUser)
 
     return true
 }
 
 const getPortfolio = async (obj,id) => {
-    
     try{
         const currentUser = await findUser(obj.email)
         const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
-    
+
         let portfolio = currentPortfolio || currentUser.portfolios[0]
 
     if (currentUser) {
-    
+
             const allIds = portfolio.cryptocurrencies.map(item => item.cryptocurrencyId);
             const resPrice = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${allIds.join(',')}&vs_currencies=usd`)
             const res = await axios.get(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${allIds.join(', ')}&order=market_cap_desc&per_page=100&page=1&sparkline=false`)
@@ -181,7 +178,7 @@ const getPortfolio = async (obj,id) => {
                 item.buyAvgPrice = buyAvgPrice;
                 item.cryptoHoldings = item.amount * item.currentPrice;
             })
-    
+
             recalculatePortfoliosPrise(currentUser.portfolios);
             return currentUser.portfolios
     } else {
@@ -197,7 +194,7 @@ const changeTransaction = async (obj, data,idPortfolio) => {
     const nData = data;
     const currentUser = await findUser(obj.email)
     const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +idPortfolio)[0]
-    
+
     let portfolio = currentPortfolio || currentUser.portfolios[0]
     const currentToken = portfolio.cryptocurrencies?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
     let indexToken = null
@@ -207,19 +204,19 @@ const changeTransaction = async (obj, data,idPortfolio) => {
             indexToken = index
         }
      })
-     
+
      currentToken.historyList[indexToken].timestamp = nData.timestamp
      currentToken.historyList[indexToken].price = nData.price
      currentToken.historyList[indexToken].amount = nData.amount
-    
+
      await userSchema.findOneAndUpdate({email: obj.email}, currentUser,)
-    
+
     return currentUser.portfolios
 }
 const removePortfolio = async (obj, id) => {
     const currentUser = await findUser(obj.email);
     const filterPortfolios = currentUser.portfolios.filter(item => +item.id !== +id)
-    console.log(filterPortfolios);
+
     currentUser.portfolios = filterPortfolios
 
     await userSchema.findOneAndUpdate({email: obj.email}, currentUser)
@@ -231,12 +228,11 @@ const removePortfolio = async (obj, id) => {
 const removeToken = async (obj, tokenId,id) => {
     const currentUser = await findUser(obj.email);
     const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
-    
+
     let portfolio = currentPortfolio || currentUser.portfolios[0]
     const filterData = portfolio.cryptocurrencies.filter(item => {
         return item.cryptocurrencyId !== tokenId
     })
-    console.log(filterData);
     portfolio.cryptocurrencies = filterData
 
     await userSchema.findOneAndUpdate({email: obj.email}, currentUser,)
@@ -249,18 +245,18 @@ const addToPortfolio = async (obj, data, id) => {
     const nData = data;
     const currentUser = await findUser(obj.email)
     const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
-    
+
         let portfolio = currentPortfolio || currentUser.portfolios[0]
     const currentToken = portfolio.cryptocurrencies?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
     if (currentToken) {
         const data = {...currentToken}
-    
+
          data.historyList = [...data.historyList, {...nData, id: Math.floor(Math.random() * 100000 * Date.now())}]
-    
+
          portfolio.cryptocurrencies.forEach(item => {
             if(item.cryptocurrencyId === nData.cryptocurrencyId) {
                 item.historyList = data.historyList
-            
+
             }
          })
 

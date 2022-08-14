@@ -44,7 +44,7 @@ app.use(bodyParser.json({ extended: true }));
 app.post('/auth', async (req, res) => {
     try{
         const result = await userSchema.findOne({email: req.body.email})
-        
+
 
         const sendData = {
             email: result?.email,
@@ -52,15 +52,15 @@ app.post('/auth', async (req, res) => {
             picture: result?.picture,
             portfolios: result?.portfolios
         }
-         
-        
+
+
         if(!result) {
             const dataForCreating = {...req.body, portfolios: [{name: 'Main Portfolio',id:Math.floor(Math.random() * 10**6), cryptocurrencies: []}]}
-            console.log('user was created');
+
             await new userSchema(dataForCreating).save()
-            
+
             res.send(dataForCreating)
-    
+
         }else{
             res.send(sendData)
         }
@@ -225,18 +225,23 @@ wsServer.on('request', function(request) {
     console.log('Client has connected.');
     connection.on('message', async function(message) {
         const response = JSON.parse(message.utf8Data)
-        if (response.method === 'getPortfolio' && response.id) {
+        if (response.method === 'getPortfolio' && response.portfolioId && response.token) {
+            const decode = jwtDecode(response.token)
             setInterval(async () => {
-                const p = await getPortfolio(1);
+                const p = await getPortfolio(decode, response.portfolioId);
                 connection.sendUTF(JSON.stringify({action: 'portfolio', data: p}));
-            }, 300000)
-        }
-        if (response.method === 'getChartValues' && response.id && response?.period) {
+            }, 60000) // 300000
             setInterval(async () => {
-                const p = await getAllTimeShotCharts(response.id, Number(response?.period))
-                connection.sendUTF(JSON.stringify({action: 'chart', data: p}));
-            }, 300000)
+                const p = await getAllTimeShotCharts(decode, Number(response?.period), response.portfolioId)
+                connection.sendUTF(JSON.stringify({action: 'chart', data: p.historyChart, period: response?.period}));
+            }, 300000) //300000
         }
+        // if (response.method === 'getChartValues' && response.id && response?.period) {
+        //     setInterval(async () => {
+        //         const p = await getAllTimeShotCharts(response.id, Number(response?.period))
+        //         connection.sendUTF(JSON.stringify({action: 'chart', data: p}));
+        //     }, 300000)
+        // }
         if (response.method === 'SearchToken' && response.value) {
             const p = searchTokens(response.value);
             connection.sendUTF(JSON.stringify({action: 'search', data: p}));
