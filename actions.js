@@ -10,7 +10,7 @@ const getAllTokens = async () => {
         const data = res.data?.coins?.map((t) => ({ name: t.name, symbol: t.symbol, cryptocurrencyId: t.id, image: t.large || t.thumb }))
         fs.writeFileSync('allTokens.json', JSON.stringify(data));
     } catch (e) {
-        console.log('err')
+        console.log('13','err')
     }
 }
 
@@ -22,7 +22,7 @@ const searchTokens = (v) => {
         const result = allTokens.filter((t) => t.name.toLowerCase().includes(value) || t.symbol.toLowerCase().includes(value))
         return result?.slice(0, 10);
     } catch (e) {
-        console.log('err')
+        console.log('25','err')
     }
 }
 const changePortfolioName = async (obj, portfolioId, newName) => {
@@ -74,7 +74,7 @@ const getChartValue = async (currentToken, days = 1, interval, name) => {
         })
         return calculatedData.filter((o) => o);
     } catch (e) {
-        console.log('err')
+        console.log('77','err')
         return [];
     }
 }
@@ -122,7 +122,7 @@ const getAllChartsValues = async (obj, days = 1, interval,id) => {
         }, [])
         return fullResult;
     } catch (e) {
-        console.log('err',e)
+        console.log('125','err')
     }
 }
 
@@ -142,7 +142,55 @@ const removeTransaction = async (obj, data,id) => {
     return true
 }
 
-const getPortfolio = async (obj,id) => {
+const getPortfolios = async (obj) => {
+    const currentUser = await findUser(obj.email)
+
+    return currentUser.portfolios.reduce(async (total, item) => {
+        const getAlltokensIDS = item.cryptocurrencies.map(item => item.cryptocurrencyId);
+        const resPrice = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${getAlltokensIDS.join(',')}&vs_currencies=usd`)
+        const actualPrices = resPrice.data;
+        const portfolioPrice = item.cryptocurrencies.reduce((sum,item) => {
+            const res = item.historyList.map(item => {
+                const currentToken = actualPrices[item.cryptocurrencyId];
+                const actualPrice = +currentToken?.usd;
+                return +item.amount * +actualPrice
+            })
+            const newArr = sum.concat(res)
+            return newArr
+            // console.log(item, actualPrice)
+
+        },[])
+        const result = {
+            id: item.id,
+            name: item.name,
+            totalPrice: portfolioPrice.reduce((sum, item) => sum += +item, 0)
+        }
+        const accum = await total
+        accum.push(result)
+        return accum
+    }, Promise.resolve([]))
+}
+
+
+
+//     const actualPrices = resPrice.data;
+
+//     const result = currentUser.portfolios.map((p) => {
+//         const pData = p.cryptocurrencies.map(item => {
+//             const currentToken = actualPrices[item.cryptocurrencyId];
+//             const actualPrice = +currentToken?.usd;
+//             return item.amount * item.currentPrice;
+//         }
+//         // return {
+//         //     id: p.id,
+//         //     name: p.name,
+//         //     totalPrice: pData.reduce((acc, next) => acc += next)
+//         // }
+//     }
+// })
+// }
+
+const findPortfolio = async (obj,id) => {
     try{
         const currentUser = await findUser(obj.email)
         const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
@@ -180,13 +228,13 @@ const getPortfolio = async (obj,id) => {
             })
 
             recalculatePortfoliosPrise(currentUser.portfolios);
-            return currentUser.portfolios
+            return portfolio
     } else {
         return null;
     }
     }
     catch(err) {
-        console.log(err);
+        console.log('237',err);
     }
 }
 
@@ -286,7 +334,7 @@ module.exports = {
     searchTokens,
     getChartValue,
     getAllChartsValues,
-    getPortfolio,
+    findPortfolio,
     addToPortfolio,
     getAllTimeShotCharts,
     removeTransaction,
@@ -295,4 +343,5 @@ module.exports = {
     createPortfolio,
     removePortfolio,
     changePortfolioName,
+    getPortfolios,
 }

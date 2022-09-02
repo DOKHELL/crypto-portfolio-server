@@ -5,7 +5,7 @@ const userSchema = require('./schemas/user-schema')
 const {
     getAllTokens,
     searchTokens,
-    getPortfolio,
+    findPortfolio,
     removeToken,
     addToPortfolio,
     getAllTimeShotCharts,
@@ -14,6 +14,7 @@ const {
     createPortfolio,
     removePortfolio,
     changePortfolioName,
+    getPortfolios,
 } = require('./actions')
 
 const connectDB = require('./db')
@@ -41,36 +42,35 @@ app.use(function (req, res, next) {
 
 app.use(bodyParser.json({ extended: true }));
 
-app.post('/auth', async (req, res) => {
+app.post('/check-user', async (req, res) => {
     try{
-        const result = await userSchema.findOne({email: req.body.email})
-
+        const decode = jwtDecode(req.headers.token)
+        const result = await userSchema.findOne({email: decode.email})
+        const initData = [{name: 'Main Portfolio',id:Math.floor(Math.random() * 10**6), cryptocurrencies: []}]
 
         const sendData = {
-            email: result?.email,
-            name: result?.name,
-            picture: result?.picture,
-            portfolios: result?.portfolios
+            email: result?.email || decode.email,
+            name: result?.name || decode.name,
+            picture: result?.picture || decode.picture,
         }
 
 
         if(!result) {
-            const dataForCreating = {...req.body, portfolios: [{name: 'Main Portfolio',id:Math.floor(Math.random() * 10**6), cryptocurrencies: []}]}
-
+            const dataForCreating = {...sendData, portfolios: initData}
             await new userSchema(dataForCreating).save()
-
             res.send(dataForCreating)
 
         }else{
             res.send(sendData)
         }
     }catch(e) {
+        console.log('70','err');
         res.send(e)
     }
 })
 app.post('/create-portfolio', async (req, res) => {
     try {
-        const decode = jwtDecode(req.query.token)
+        const decode = jwtDecode(req.headers.token)
         if (decode) {
             const response = await createPortfolio(decode,req.body)
             if (response) {
@@ -85,11 +85,28 @@ app.post('/create-portfolio', async (req, res) => {
     }
 })
 
-app.get('/get-portfolio', async (req, res) => {
+app.get('/get-portfolios', async (req, res) => {
     try {
-        const decode = jwtDecode(req.query.token)
+        const decode = jwtDecode(req.headers.token)
+        if (decode) {
+            const response = await getPortfolios(decode)
+            if (response) {
+                res.send(JSON.stringify(response))
+            }
+            else throw Error('Портфолио не найдено')
+        } else {
+            throw Error('Не передано token')
+        }
+    }catch(e) {
+        res.send({ error: e.message })
+    }
+})
+
+app.get('/find-portfolio', async (req, res) => {
+    try {
+        const decode = jwtDecode(req.headers.token)
         if (decode && req.query.id) {
-            const response = await getPortfolio(decode,req.query.id)
+            const response = await findPortfolio(decode,req.query.id)
             if (response) {
                 res.send(JSON.stringify(response))
             }
@@ -103,8 +120,8 @@ app.get('/get-portfolio', async (req, res) => {
 });
 app.post('/change-portfolio-name', async (req, res) => {
     try{
-        if (req.query?.token && req.query?.id) {
-            const decode = jwtDecode(req.query.token)
+        if (req.headers?.token && req.query?.id) {
+            const decode = jwtDecode(req.headers.token)
             const p = await changePortfolioName(decode,req.query.id, req.body.newName)
             res.send(JSON.stringify(p));
         } else {
@@ -117,8 +134,8 @@ app.post('/change-portfolio-name', async (req, res) => {
 
 app.get('/chart-values', async (req, res) => {
     try {
-        if (req.query?.token && req.query?.period && req.query?.id) {
-            const decode = jwtDecode(req.query.token)
+        if (req.headers?.token && req.query?.period && req.query?.id) {
+            const decode = jwtDecode(req.headers.token)
             const p = await getAllTimeShotCharts(decode, req.query?.period === 'max' ? req.query?.period : Number(req.query?.period),req.query.id)
             res.send(JSON.stringify(p));
         } else {
@@ -134,7 +151,7 @@ app.post('/change-transaction', async (req, res) => {
         if(!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
         if(!req.query.id) throw Error('Не передан id')
         if (req.query?.token) {
-            const decode = jwtDecode(req.query.token)
+            const decode = jwtDecode(req.headers.token)
            const p = await changeTransaction(decode,req.body,req.query.id)
            if (p) {
             res.send({ success: true })
@@ -149,8 +166,8 @@ app.post('/change-transaction', async (req, res) => {
 
 app.post('/remove-transaction', async (req, res) => {
     try{
-        if (req.query?.token && req.query?.id) {
-            const decode = jwtDecode(req.query.token)
+        if (req.headers?.token && req.query?.id) {
+            const decode = jwtDecode(req.headers.token)
            const p = await removeTransaction(decode,req.body,req.query.id)
            if (p) {
             res.send({ success: true })
@@ -165,8 +182,8 @@ app.post('/remove-transaction', async (req, res) => {
 app.post('/remove-portfolio', async (req, res) => {
 
     try{
-        if (req.query?.token && req.query?.id) {
-            const decode = jwtDecode(req.query.token)
+        if (req.headers?.token && req.query?.id) {
+            const decode = jwtDecode(req.headers.token)
             const p = await removePortfolio(decode, req.query.id)
             if (p) {
                 res.send({ success: true })
@@ -188,8 +205,8 @@ app.post('/add-to-portfolio', async (req, res) => {
         if (!req.body.symbol) throw Error('Не передано symbol')
         if(!req.body.type) throw Error('Не передан type')
         if(!req.query.id) throw Error('Не передан id')
-        if (req.query?.token) {
-            const decode = jwtDecode(req.query.token)
+        if (req.headers?.token) {
+            const decode = jwtDecode(req.headers.token)
             const p = await addToPortfolio(decode, req.body, req.query.id)
             if (p) {
                 res.send({ success: true })
@@ -206,8 +223,8 @@ app.post('/remove-token', async (req, res) => {
     try {
         if (!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
         if (!req.body.id) throw Error('Не передан id')
-        if (req.query?.token) {
-            const decode = jwtDecode(req.query.token)
+        if (req.headers?.token) {
+            const decode = jwtDecode(req.headers.token)
             const p = await removeToken(decode, req.body.cryptocurrencyId,req.body.id)
             if (p) {
                 res.send({ success: true })
