@@ -1,6 +1,7 @@
 const axios = require("axios");
 const fs = require("fs");
-const { handleJson } = require("./helpers");
+const userSchema = require('./schemas/user-schema')
+const { handleJson, findUser, recalculatePortfoliosPrise } = require("./helpers");
 
 
 const getAllTokens = async () => {
@@ -9,7 +10,7 @@ const getAllTokens = async () => {
         const data = res.data?.coins?.map((t) => ({ name: t.name, symbol: t.symbol, cryptocurrencyId: t.id, image: t.large || t.thumb }))
         fs.writeFileSync('allTokens.json', JSON.stringify(data));
     } catch (e) {
-        console.log('err')
+        console.log('13','err')
     }
 }
 
@@ -21,7 +22,31 @@ const searchTokens = (v) => {
         const result = allTokens.filter((t) => t.name.toLowerCase().includes(value) || t.symbol.toLowerCase().includes(value))
         return result?.slice(0, 10);
     } catch (e) {
-        console.log('err')
+        console.log('25','err')
+    }
+}
+const changePortfolioName = async (obj, portfolioId, newName) => {
+    const currentUser = await findUser(obj.email)
+    const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +portfolioId)[0]
+
+    currentPortfolio.name = newName
+
+    await userSchema.findOneAndUpdate({email: obj.email}, currentUser)
+
+    return true
+}
+
+const createPortfolio = async (obj,data) => {
+    try{
+        const currentUser = await findUser(obj.email)
+        const dataForCreating = { name: data.name,id:Math.floor(Math.random() * 10**6), cryptocurrencies: []}
+        currentUser.portfolios.push(dataForCreating)
+
+        const result = await userSchema.findOneAndUpdate({email: obj.email}, currentUser,{new: true})
+
+        return result
+    }catch(e) {
+        return e
     }
 }
 
@@ -49,19 +74,25 @@ const getChartValue = async (currentToken, days = 1, interval, name) => {
         })
         return calculatedData.filter((o) => o);
     } catch (e) {
-        console.log('err')
+        console.log('77','err')
         return [];
     }
 }
 
 
-const getAllChartsValues = async (id, days = 1, interval) => {
+const getAllChartsValues = async (obj, days = 1, interval,id) => {
     try {
-        let res = fs.readFileSync('portfolios.json');
-        let allData = JSON.parse(res);
-        const currentPortfolio = allData.find((item) => +item.id === +id);
+        // let res = fs.readFileSync('portfolios.json');
+        // let allData = JSON.parse(res);
+        // const currentPortfolio = allData.find((item) => +item.id === +id);
+        const currentUser = await findUser(obj.email)
+        const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
+
+        let portfolio = currentPortfolio || currentUser.portfolios[0]
+
         let result = []
-        for await (let currentToken of currentPortfolio?.tokenList) {
+
+        for await (let currentToken of portfolio.cryptocurrencies) {
             let res = await getChartValue(currentToken, days, interval, currentToken.cryptocurrencyId)
             result.push(res)
         }
@@ -91,23 +122,89 @@ const getAllChartsValues = async (id, days = 1, interval) => {
         }, [])
         return fullResult;
     } catch (e) {
-        console.log('err')
+        console.log('125','err')
     }
 }
 
-const getPortfolio = async (id) => {
-    console.log('call')
-    let res = fs.readFileSync('portfolios.json');
-    let allData = JSON.parse(res);
-    const currentPortfolio = allData.find((item) => +item.id === +id);
-    if (currentPortfolio) {
-        try {
-            const allIds = currentPortfolio.tokenList.map(item => item.cryptocurrencyId);
+const removeTransaction = async (obj, data,id) => {
+    const nData = data;
+
+    const currentUser = await findUser(obj.email)
+    const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
+
+    let portfolio = currentPortfolio || currentUser.portfolios[0]
+    const currentToken = portfolio.cryptocurrencies?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
+
+    currentToken.historyList = currentToken.historyList.filter(item => item.id !== nData.id)
+
+    await userSchema.findOneAndUpdate({email: obj.email}, currentUser)
+
+    return true
+}
+
+const getPortfolios = async (obj) => {
+    const currentUser = await findUser(obj.email)
+
+    return currentUser.portfolios.reduce(async (total, item) => {
+        const getAlltokensIDS = item.cryptocurrencies.map(item => item.cryptocurrencyId);
+        const resPrice = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${getAlltokensIDS.join(',')}&vs_currencies=usd`)
+        const actualPrices = resPrice.data;
+        const portfolioPrice = item.cryptocurrencies.reduce((sum,item) => {
+            const res = item.historyList.map(item => {
+                const currentToken = actualPrices[item.cryptocurrencyId];
+                const actualPrice = +currentToken?.usd;
+                return +item.amount * +actualPrice
+            })
+            const newArr = sum.concat(res)
+            return newArr
+            // console.log(item, actualPrice)
+
+        },[])
+        const result = {
+            id: item.id,
+            name: item.name,
+            totalPrice: portfolioPrice.reduce((sum, item) => sum += +item, 0)
+        }
+        const accum = await total
+        accum.push(result)
+        return accum
+    }, Promise.resolve([]))
+}
+
+
+
+//     const actualPrices = resPrice.data;
+
+//     const result = currentUser.portfolios.map((p) => {
+//         const pData = p.cryptocurrencies.map(item => {
+//             const currentToken = actualPrices[item.cryptocurrencyId];
+//             const actualPrice = +currentToken?.usd;
+//             return item.amount * item.currentPrice;
+//         }
+//         // return {
+//         //     id: p.id,
+//         //     name: p.name,
+//         //     totalPrice: pData.reduce((acc, next) => acc += next)
+//         // }
+//     }
+// })
+// }
+
+const findPortfolio = async (obj,id) => {
+    try{
+        const currentUser = await findUser(obj.email)
+        const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
+
+        let portfolio = currentPortfolio || currentUser.portfolios[0]
+
+    if (currentUser) {
+
+            const allIds = portfolio.cryptocurrencies.map(item => item.cryptocurrencyId);
             const resPrice = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${allIds.join(',')}&vs_currencies=usd`)
             const res = await axios.get(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${allIds.join(', ')}&order=market_cap_desc&per_page=100&page=1&sparkline=false`)
             const actualPrices = resPrice.data;
             const actualInfo = res.data;
-            currentPortfolio.tokenList.forEach(item => {
+            portfolio.cryptocurrencies.forEach(item => {
                 const currentToken = actualPrices[item.cryptocurrencyId];
                 const currentTokenInfo = actualInfo.find((e) => e.id === item.cryptocurrencyId);
                 const actualPrice = +currentToken?.usd;
@@ -129,83 +226,103 @@ const getPortfolio = async (id) => {
                 item.buyAvgPrice = buyAvgPrice;
                 item.cryptoHoldings = item.amount * item.currentPrice;
             })
-            fs.writeFileSync('portfolios.json', JSON.stringify(allData));
-            return currentPortfolio
-        } catch (e) {
-            console.log('err')
-            return currentPortfolio
-        }
+
+            recalculatePortfoliosPrise(currentUser.portfolios);
+            return portfolio
     } else {
         return null;
     }
+    }
+    catch(err) {
+        console.log('237',err);
+    }
 }
 
-const changeTransaction = (idPortfolio, data) => {
+const changeTransaction = async (obj, data,idPortfolio) => {
     const nData = data;
-    let res = fs.readFileSync('portfolios.json');
-    let allData = JSON.parse(res);
-    const currentPortfolio = allData.find((item) => +item.id === +idPortfolio);
-    const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
+    const currentUser = await findUser(obj.email)
+    const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +idPortfolio)[0]
+
+    let portfolio = currentPortfolio || currentUser.portfolios[0]
+    const currentToken = portfolio.cryptocurrencies?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
     let indexToken = null
      currentToken.historyList.find((item,index) => {
 
         if(item.id === nData.id) {
-            console.log(index);
             indexToken = index
         }
      })
+
      currentToken.historyList[indexToken].timestamp = nData.timestamp
      currentToken.historyList[indexToken].price = nData.price
      currentToken.historyList[indexToken].amount = nData.amount
-     console.log(currentToken.historyList);
-    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
-    return true
+
+     await userSchema.findOneAndUpdate({email: obj.email}, currentUser,)
+
+    return currentUser.portfolios
+}
+const removePortfolio = async (obj, id) => {
+    const currentUser = await findUser(obj.email);
+    const filterPortfolios = currentUser.portfolios.filter(item => +item.id !== +id)
+
+    currentUser.portfolios = filterPortfolios
+
+    await userSchema.findOneAndUpdate({email: obj.email}, currentUser)
+
+    return true;
+
 }
 
-const removeToken = async (id, tokenId) => {
-    let res = fs.readFileSync('portfolios.json');
-    let allData = JSON.parse(res);
-    let currentPortfolio = allData.find((item) => +item.id === +id);
-    currentPortfolio.tokenList = currentPortfolio?.tokenList?.filter((item) => item.cryptocurrencyId !== tokenId)
-    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
+const removeToken = async (obj, tokenId,id) => {
+    const currentUser = await findUser(obj.email);
+    const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
+
+    let portfolio = currentPortfolio || currentUser.portfolios[0]
+    const filterData = portfolio.cryptocurrencies.filter(item => {
+        return item.cryptocurrencyId !== tokenId
+    })
+    portfolio.cryptocurrencies = filterData
+
+    await userSchema.findOneAndUpdate({email: obj.email}, currentUser,)
+
     return true;
 }
 
-const removeTransaction = (idPortfolio, data) => {
-    const nData = data;
-    let res = fs.readFileSync('portfolios.json');
-    let allData = JSON.parse(res);
-    const currentPortfolio = allData.find((item) => +item.id === +idPortfolio);
-    const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
-    // if(currentToken.historyList.length === 1) {
-    //     currentToken.historyList = currentToken.historyList.filter(item => item.id !== nData.id)
-    //     removeToken(idPortfolio, nData.cryptocurrencyId)
-    //     return true
-    // }
-    currentToken.historyList = currentToken.historyList.filter(item => item.id !== nData.id)
-    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
-    return true
-}
 
-const addToPortfolio = async (id, data) => {
+const addToPortfolio = async (obj, data, id) => {
     const nData = data;
-    let res = fs.readFileSync('portfolios.json');
-    let allData = JSON.parse(res);
-    const currentPortfolio = allData.find((item) => +item.id === +id);
-    const currentToken = currentPortfolio?.tokenList?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
+    const currentUser = await findUser(obj.email)
+    const currentPortfolio = currentUser.portfolios.filter(item => +item.id === +id)[0]
+
+        let portfolio = currentPortfolio || currentUser.portfolios[0]
+    const currentToken = portfolio.cryptocurrencies?.find((item) => item.cryptocurrencyId === nData.cryptocurrencyId)
     if (currentToken) {
-         currentToken.historyList = [...currentToken.historyList, {...nData, timestamp:  nData.timestamp ? nData.timestamp : Date.now(), id: Math.floor(Math.random() * 100000 * Date.now())}]
+        const data = {...currentToken}
 
+         data.historyList = [...data.historyList, {...nData, id: Math.floor(Math.random() * 100000 * Date.now())}]
+
+         portfolio.cryptocurrencies.forEach(item => {
+            if(item.cryptocurrencyId === nData.cryptocurrencyId) {
+                item.historyList = data.historyList
+
+            }
+         })
+
+        await userSchema.findOneAndUpdate({email: obj.email}, currentUser)
     } else {
-        currentPortfolio?.tokenList.push(handleJson(nData))
+        const hr = handleJson(nData)
+       portfolio.cryptocurrencies.push(hr) // add
+       const newData = {
+        ...currentUser,
+       }
+      await userSchema.findOneAndUpdate({email: obj.email}, newData,)
     }
-    fs.writeFileSync('portfolios.json', JSON.stringify(allData));
     return true;
 }
 
-const getAllTimeShotCharts = async (id, period) => {
+const getAllTimeShotCharts = async (obj, period,id) => {
     const interval = period === 1 ? '1' : period === 7 ? 'hour' : 'daily';
-    const data = await getAllChartsValues(id, period, interval);
+    const data = await getAllChartsValues(obj, period, interval,id);
     const finalData = data?.filter(e => e && e[1]);
     return {
         historyChart: finalData,
@@ -217,10 +334,14 @@ module.exports = {
     searchTokens,
     getChartValue,
     getAllChartsValues,
-    getPortfolio,
+    findPortfolio,
     addToPortfolio,
     getAllTimeShotCharts,
     removeTransaction,
     removeToken,
     changeTransaction,
+    createPortfolio,
+    removePortfolio,
+    changePortfolioName,
+    getPortfolios,
 }
