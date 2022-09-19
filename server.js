@@ -42,7 +42,7 @@ app.use(function (req, res, next) {
 
 app.use(bodyParser.json({ extended: true }));
 
-app.post('/check-user', async (req, res) => {
+app.get('/check-user', async (req, res) => {
     try{
         const decode = jwtDecode(req.headers.token)
         const result = await userSchema.findOne({email: decode.email})
@@ -120,6 +120,7 @@ app.get('/find-portfolio', async (req, res) => {
 });
 app.post('/change-portfolio-name', async (req, res) => {
     try{
+        console.log('123',req.query, req.headers)
         if (req.headers?.token && req.query?.id) {
             const decode = jwtDecode(req.headers.token)
             const p = await changePortfolioName(decode,req.query.id, req.body.newName)
@@ -150,7 +151,7 @@ app.post('/change-transaction', async (req, res) => {
     try{
         if(!req.body.cryptocurrencyId) throw Error('Не передано cryptocurrencyId')
         if(!req.query.id) throw Error('Не передан id')
-        if (req.query?.token) {
+        if (req.headers?.token) {
             const decode = jwtDecode(req.headers.token)
            const p = await changeTransaction(decode,req.body,req.query.id)
            if (p) {
@@ -245,7 +246,7 @@ wsServer.on('request', function(request) {
         if (response.method === 'getPortfolio' && response.portfolioId && response.token) {
             const decode = jwtDecode(response.token)
             setInterval(async () => {
-                const p = await getPortfolio(decode, response.portfolioId);
+                const p = await findPortfolio(decode, response.portfolioId);
                 connection.sendUTF(JSON.stringify({action: 'portfolio', data: p}));
             }, 60000) // 300000
             setInterval(async () => {
